@@ -9,8 +9,8 @@ import { createUser, getUserByEmail, createReport, getRecentReports } from '@/ut
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast'
 
-const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const geminiApiKey = 'AIzaSyB2iBDJHZNytthVh4arWyLY9vhvnawAGhY' ;
+const googleMapsApiKey = 'AIzaSyAqAo0-uDFPLPIxwKYEEO3jdBZUVu2J9V4';
 
 const libraries: Libraries = ['places'];
 
@@ -92,18 +92,17 @@ export default function ReportPage() {
       reader.readAsDataURL(file);
     });
   };
-
   const handleVerify = async () => {
-    if (!file) return
-
-    setVerificationStatus('verifying')
-    
+    if (!file) return;
+  
+    setVerificationStatus('verifying');
+  
     try {
       const genAI = new GoogleGenerativeAI(geminiApiKey!);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+  
       const base64Data = await readFileAsBase64(file);
-
+  
       const imageParts = [
         {
           inlineData: {
@@ -112,47 +111,62 @@ export default function ReportPage() {
           },
         },
       ];
-
+  
       const prompt = `You are an expert in waste management and recycling. Analyze this image and provide:
         1. The type of waste (e.g., plastic, paper, glass, metal, organic)
         2. An estimate of the quantity or amount (in kg or liters)
         3. Your confidence level in this assessment (as a percentage)
-        
+  
         Respond in JSON format like this:
         {
           "wasteType": "type of waste",
           "quantity": "estimated quantity with unit",
           "confidence": confidence level as a number between 0 and 1
         }`;
-
+  
       const result = await model.generateContent([prompt, ...imageParts]);
-      const response = await result.response;
-      const text = response.text();
+  
+      const response = result.response;
+  
+      // Extract the content and clean up the JSON part
+      const candidateContent = response?.candidates?.[0]?.content?.parts?.[0]?.text;
       
-      try {
-        const parsedResult = JSON.parse(text);
-        if (parsedResult.wasteType && parsedResult.quantity && parsedResult.confidence) {
-          setVerificationResult(parsedResult);
-          setVerificationStatus('success');
-          setNewReport({
-            ...newReport,
-            type: parsedResult.wasteType,
-            amount: parsedResult.quantity
-          });
-        } else {
-          console.error('Invalid verification result:', parsedResult);
+      if (candidateContent) {
+        // Remove backticks and newlines to isolate the JSON
+        const jsonContent = candidateContent.replace(/```json\n|\n```/g, '').trim();
+  
+        try {
+          const parsedResult = JSON.parse(jsonContent);
+  
+          if (parsedResult.wasteType && parsedResult.quantity && parsedResult.confidence !== undefined) {
+            setVerificationResult(parsedResult);
+            setVerificationStatus('success');
+            setNewReport({
+              ...newReport,
+              type: parsedResult.wasteType,
+              amount: parsedResult.quantity,
+            });
+          } else {
+            console.error('Invalid verification result:', parsedResult);
+            setVerificationStatus('failure');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse JSON response:', jsonContent);
+          console.error('Error:', parseError);
           setVerificationStatus('failure');
         }
-      } catch (error) {
-        console.error('Failed to parse JSON response:', text);
+      } else {
+        console.error('No valid content found in the response');
         setVerificationStatus('failure');
       }
     } catch (error) {
       console.error('Error verifying waste:', error);
       setVerificationStatus('failure');
     }
-  }
-
+  };
+  
+  
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (verificationStatus !== 'success' || !user) {
