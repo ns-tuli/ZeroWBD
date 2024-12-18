@@ -17,6 +17,7 @@ export const Reports = pgTable("reports", {
   amount: varchar("amount", { length: 255 }).notNull(),
   imageUrl: text("image_url"),
   verificationResult: jsonb("verification_result"),
+  recyclingRecommendations: jsonb("recycling_recommendations"), // New column
   status: varchar("status", { length: 255 }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   collectorId: integer("collector_id").references(() => Users.id),

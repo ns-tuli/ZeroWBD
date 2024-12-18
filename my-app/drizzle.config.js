@@ -10,7 +10,7 @@ export default {
   out: "./drizzle",
 
   dbCredentials: {
-    url: process.env.DATABASE_URL,
-    connectionString: process.env.DATABASE_URL,
+    url: "postgresql://zerowbd_owner:xrPbkBjoi7D6@ep-weathered-glitter-a15z1a2w.ap-southeast-1.aws.neon.tech/zerowbd?sslmode=require",
+    connectionString: "postgresql://zerowbd_owner:xrPbkBjoi7D6@ep-weathered-glitter-a15z1a2w.ap-southeast-1.aws.neon.tech/zerowbd?sslmode=require"
   },
 };
