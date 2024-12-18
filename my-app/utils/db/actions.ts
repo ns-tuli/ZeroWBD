@@ -476,3 +476,38 @@ export async function getUserBalance(userId: number): Promise<number> {
   }, 0);
   return Math.max(balance, 0); // Ensure balance is never negative
 }
+
+export async function saveRecyclingRecommendations(
+  reportId: number,
+  recommendations: { method: string; facilities: string; environmentalImpact: string; recommendations: string }
+) {
+  try {
+    const [updatedReport] = await db
+      .update(Reports)
+      .set({ recyclingRecommendations: recommendations })
+      .where(eq(Reports.id, reportId))
+      .returning()
+      .execute();
+    return updatedReport;
+  } catch (error) {
+    console.error("Error saving recycling recommendations:", error);
+    throw error;
+  }
+}
+
+export async function getRecyclingRecommendations(reportId: number) {
+  try {
+    const [report] = await db
+      .select({
+        recyclingRecommendations: Reports.recyclingRecommendations,
+      })
+      .from(Reports)
+      .where(eq(Reports.id, reportId))
+      .execute();
+    return report?.recyclingRecommendations || null;
+  } catch (error) {
+    console.error("Error fetching recycling recommendations:", error);
+    throw error;
+  }
+}
+
